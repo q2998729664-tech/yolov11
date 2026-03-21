@@ -69,7 +69,6 @@ text
 Clone the repository
 
 bash
-git clone https://github.com/yourusername/yolov11-classroom-attention.git
 cd yolov11-classroom-attention
 Create a virtual environment (recommended)
 
