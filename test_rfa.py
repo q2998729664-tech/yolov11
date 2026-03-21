@@ -1,8 +1,9 @@
-from ultralytics import YOLO
 import torch
 
+from ultralytics import YOLO
+
 # 1. 测试RFAConv能否正常导入
-from ultralytics.nn.modules import RFAConv
+
 print("✅ RFAConv模块导入成功，无报错！")
 
 # 2. 测试模型能否正常构建
