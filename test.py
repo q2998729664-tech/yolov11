@@ -1,4 +1,5 @@
 import cv2
+
 import ultralytics
 
 print(f"OpenCV 版本: {cv2.__version__}")  # 会显示版本号，比如 4.8.0
