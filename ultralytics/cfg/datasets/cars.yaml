@@ -1,0 +1,8 @@
+path: C:\pythoncode\yolocode\ultralytics-8.3.163\datasets\Cars.v1-cars_v1.yolov11
+train: train/images
+val: valid/images
+test: test/images
+
+
+names: ['cars', 'truck']
+

@@ -1,0 +1,9 @@
+path: paopao
+train: images/train
+val: images/val
+test: images/test
+# Classes
+names:
+  0: paopao
+  1: bear
+  2: nail polish
