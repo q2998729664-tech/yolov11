@@ -3,6 +3,4 @@ train: train/images
 val: valid/images
 test: test/images
 
-
-names: ['cars', 'truck']
-
+names: ["cars", "truck"]
