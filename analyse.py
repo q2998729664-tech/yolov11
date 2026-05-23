@@ -1,24 +1,24 @@
 import cv2
-import numpy as np
+
 from ultralytics import YOLO
 
 # ========== 配置 ==========
-MODEL_PATH = r"C:\pythoncode\yolocode\ultralytics-8.3.163\results\yolo11m2\weights\best.pt"           # 你的模型路径
-VIDEO_PATH = r"C:\Users\29987\Downloads\QQ2026217-225016.mp4"   # 课堂视频路径
-OUTPUT_VIDEO = r"C:\Users\29987\Downloads\output.mp4"   # 输出视频路径（可选，保存带标注的视频）
-CONF_THRES = 0.05               # 检测置信度阈值
-IOU_THRES = 0.9             # NMS IoU阈值
+MODEL_PATH = r"C:\pythoncode\yolocode\ultralytics-8.3.163\results\yolo11m2\weights\best.pt"  # 你的模型路径
+VIDEO_PATH = r"C:\Users\29987\Downloads\QQ2026217-225016.mp4"  # 课堂视频路径
+OUTPUT_VIDEO = r"C:\Users\29987\Downloads\output.mp4"  # 输出视频路径（可选，保存带标注的视频）
+CONF_THRES = 0.05  # 检测置信度阈值
+IOU_THRES = 0.9  # NMS IoU阈值
 
 # 情绪类别名称（必须与训练时一致）
-EMOTION_NAMES = ['resistant', 'irritated', 'happy', 'focused', 'bored', 'surprised']
+EMOTION_NAMES = ["resistant", "irritated", "happy", "focused", "bored", "surprised"]
 NUM_CLASSES = len(EMOTION_NAMES)
 
 # 规则法阈值（可根据实际情况调整）
-POSITIVE_THRES = 0.6    # 高专注时专注+愉悦占比 > 60%
+POSITIVE_THRES = 0.6  # 高专注时专注+愉悦占比 > 60%
 NEGATIVE_LOW_THRES = 0.1  # 高专注时烦躁+抵触占比 < 10%
-NEGATIVE_MID_LOW = 0.1    # 中专注时烦躁+抵触的下限
-NEGATIVE_MID_HIGH = 0.3   # 中专注时烦躁+抵触的上限
-NEUTRAL_THRES = 0.4       # 中专注时困惑+倦怠占比 > 40%
+NEGATIVE_MID_LOW = 0.1  # 中专注时烦躁+抵触的下限
+NEGATIVE_MID_HIGH = 0.3  # 中专注时烦躁+抵触的上限
+NEUTRAL_THRES = 0.4  # 中专注时困惑+倦怠占比 > 40%
 # ==========================
 
 # 1. 加载模型
@@ -31,7 +31,7 @@ width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 # 准备输出视频（如果需要）
-out = cv2.VideoWriter(OUTPUT_VIDEO, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+out = cv2.VideoWriter(OUTPUT_VIDEO, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
 
 # 3. 初始化统计变量
 total_frames = 0
@@ -74,14 +74,15 @@ print("情绪占比：")
 for name, ratio in emotion_ratios.items():
     print(f"  {name}: {ratio:.2%}")
 
+
 # 7. 规则法判断专注度等级
 def classify_attention(ratios):
-    focused = ratios.get('focused', 0.0)
-    happy = ratios.get('happy', 0.0)
-    confused = ratios.get('confused', 0.0)
-    bored = ratios.get('bored', 0.0)
-    irritated = ratios.get('irritated', 0.0)
-    resistant = ratios.get('resistant', 0.0)
+    focused = ratios.get("focused", 0.0)
+    happy = ratios.get("happy", 0.0)
+    confused = ratios.get("confused", 0.0)
+    bored = ratios.get("bored", 0.0)
+    irritated = ratios.get("irritated", 0.0)
+    resistant = ratios.get("resistant", 0.0)
 
     positive = focused + happy
     negative = irritated + resistant
@@ -93,6 +94,7 @@ def classify_attention(ratios):
         return "中专注"
     else:
         return "低专注"
+
 
 attention_level = classify_attention(emotion_ratios)
 print(f"专注度等级：{attention_level}")
