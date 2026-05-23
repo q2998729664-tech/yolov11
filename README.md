@@ -40,29 +40,29 @@ Live bounding boxes, emotion labels, and attention level display.
 One‑click result saving (CSV/TXT).
 
 🚀 Performance Highlights
-Metric	Baseline YOLOv11m	Ours (YOLOv11‑RSCN)
-mAP50	87.3%	91.5% (+4.2%)
-mAP50:95	66.5%	70.8%
-Parameters	20.1M	20.4M (+1.5%)
-Inference Speed	82 FPS	78 FPS (RTX 5060)
-Attention Accuracy (RF)	–	86.0%
+Metric Baseline YOLOv11m Ours (YOLOv11‑RSCN)
+mAP50 87.3% 91.5% (+4.2%)
+mAP50:95 66.5% 70.8%
+Parameters 20.1M 20.4M (+1.5%)
+Inference Speed 82 FPS 78 FPS (RTX 5060)
+Attention Accuracy (RF) – 86.0%
 📁 Repository Structure
 text
 .
 ├── configs/
-│   └── yolo11-CBAMRFA.yaml          # Model configuration with RFAConv & CBAM
+│ └── yolo11-CBAMRFA.yaml # Model configuration with RFAConv & CBAM
 ├── models/
-│   ├── conv.py                      # Custom modules (RFAConv, CBAM, etc.)
-│   └── attention.py                 # Channel & Spatial attention implementations
+│ ├── conv.py # Custom modules (RFAConv, CBAM, etc.)
+│ └── attention.py # Channel & Spatial attention implementations
 ├── datasets/
-│   └── classroom_emotion.yaml       # Dataset configuration (paths, classes)
+│ └── classroom_emotion.yaml # Dataset configuration (paths, classes)
 ├── scripts/
-│   ├── train.py                     # Training script
-│   ├── val.py                       # Validation script
-│   └── predict.py                   # Inference script
+│ ├── train.py # Training script
+│ ├── val.py # Validation script
+│ └── predict.py # Inference script
 ├── gui/
-│   └── attention_gui.py             # Tkinter‑based real‑time demo
-├── results/                         # Trained weights and logs
+│ └── attention_gui.py # Tkinter‑based real‑time demo
+├── results/ # Trained weights and logs
 ├── requirements.txt
 └── README.md
 🛠️ Installation
@@ -74,8 +74,8 @@ Create a virtual environment (recommended)
 
 bash
 python -m venv venv
-source venv/bin/activate   # Linux/Mac
-venv\Scripts\activate      # Windows
+source venv/bin/activate # Linux/Mac
+venv\Scripts\activate # Windows
 Install dependencies
 
 bash
@@ -100,13 +100,13 @@ The dataset is organized in YOLO format:
 text
 datasets/classroom_emotion/
 ├── images/
-│   ├── train/
-│   ├── val/
-│   └── test/
+│ ├── train/
+│ ├── val/
+│ └── test/
 ├── labels/
-│   ├── train/
-│   ├── val/
-│   └── test/
+│ ├── train/
+│ ├── val/
+│ └── test/
 └── dataset.yaml
 A sample dataset.yaml is provided. You can replace the path with your own data location.
 
@@ -154,16 +154,16 @@ Save results as CSV/TXT for further analysis.
 📈 Results & Ablation Study
 We conducted extensive ablation experiments on the classroom dataset. All models were trained for 150 epochs with identical hyperparameters.
 
-Model	mAP50 (%)	mAP50:95 (%)	Params (M)	FPS
-YOLOv11m (baseline)	87.3	66.5	20.1	82
-+ RFAConv	89.2	68.4	20.3	79
-+ CBAM	88.9	67.8	20.2	80
-+ RFAConv + CBAM	90.4	69.6	20.4	78
-+ Focal Loss (full)	91.5	70.8	20.4	78
-In challenging scenarios (occlusion, backlight, distant faces), the proposed model exhibits significantly improved robustness, e.g., +16.4% mAP under heavy occlusion.
+Model mAP50 (%) mAP50:95 (%) Params (M) FPS
+YOLOv11m (baseline) 87.3 66.5 20.1 82
 
+- RFAConv 89.2 68.4 20.3 79
+- CBAM 88.9 67.8 20.2 80
+- RFAConv + CBAM 90.4 69.6 20.4 78
+- Focal Loss (full) 91.5 70.8 20.4 78
+  In challenging scenarios (occlusion, backlight, distant faces), the proposed model exhibits significantly improved robustness, e.g., +16.4% mAP under heavy occlusion.
 
-🙏 Acknowledgements
+🙏 Acknowledgments
 Ultralytics YOLOv11 for the excellent detection framework.
 
 The authors of RFAConv and CBAM for their inspiring work.

@@ -1,30 +1,27 @@
+import csv
+import os
+import threading
+import time
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from datetime import datetime
+from tkinter import filedialog, messagebox, ttk
+
 import cv2
 from PIL import Image, ImageTk
-import threading
-import os
-import sys
-import csv
-from datetime import datetime
-import time
+
 from ultralytics import YOLO
-import csv
-from datetime import datetime
+
 
 # ========== 专注度规则函数 ==========
 def classify_attention(ratios):
+    """根据情绪比例规则判断专注度等级 ratios: dict, 包含情绪名称到占比的字典（0~1） 返回: '高专注' / '中专注' / '低专注'.
     """
-    根据情绪比例规则判断专注度等级
-    ratios: dict, 包含情绪名称到占比的字典（0~1）
-    返回: '高专注' / '中专注' / '低专注'
-    """
-    focused = ratios.get('focused', 0.0)
-    happy = ratios.get('happy', 0.0)
-    confused = ratios.get('confused', 0.0)
-    bored = ratios.get('bored', 0.0)
-    irritated = ratios.get('irritated', 0.0)
-    resistant = ratios.get('resistant', 0.0)
+    focused = ratios.get("focused", 0.0)
+    happy = ratios.get("happy", 0.0)
+    confused = ratios.get("confused", 0.0)
+    bored = ratios.get("bored", 0.0)
+    irritated = ratios.get("irritated", 0.0)
+    resistant = ratios.get("resistant", 0.0)
 
     positive = focused + happy
     negative = irritated + resistant
@@ -49,13 +46,13 @@ class YOLOAttentionGUI:
         self.model_path = tk.StringVar(value="best.pt")
         self.conf_thres = tk.DoubleVar(value=0.25)
         self.iou_thres = tk.DoubleVar(value=0.7)
-        self.stop_flag = False          # 用于停止视频/摄像头检测
+        self.stop_flag = False  # 用于停止视频/摄像头检测
         self.cap = None
         self.after_id = None
-        self.model = None               # 模型实例，懒加载
+        self.model = None  # 模型实例，懒加载
 
         # 情绪名称列表（必须与训练一致）
-        self.emotion_names = ['focused', 'confused', 'happy', 'bored', 'irritated', 'resistant']
+        self.emotion_names = ["focused", "confused", "happy", "bored", "irritated", "resistant"]
         # 统计变量（累计计数）
         self.total_detections = 0
         self.emotion_counts = {name: 0 for name in self.emotion_names}
@@ -70,7 +67,7 @@ class YOLOAttentionGUI:
 
         # 左侧控制面板
         left_frame = ttk.LabelFrame(main_frame, text="模型设置", padding="10")
-        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0,10))
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
 
         # 模型选择
         ttk.Label(left_frame, text="选择模型:").grid(row=0, column=0, sticky=tk.W, pady=5)
@@ -80,8 +77,9 @@ class YOLOAttentionGUI:
 
         # 置信度阈值
         ttk.Label(left_frame, text="置信度阈值:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        conf_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.conf_thres,
-                                orient=tk.HORIZONTAL, length=150)
+        conf_scale = ttk.Scale(
+            left_frame, from_=0.0, to=1.0, variable=self.conf_thres, orient=tk.HORIZONTAL, length=150
+        )
         conf_scale.grid(row=1, column=1, columnspan=2, pady=5, sticky=tk.W)
         self.conf_label = ttk.Label(left_frame, text=f"{self.conf_thres.get():.2f}")
         self.conf_label.grid(row=1, column=3, padx=5)
@@ -89,19 +87,26 @@ class YOLOAttentionGUI:
 
         # IoU阈值
         ttk.Label(left_frame, text="IoU值:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        iou_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.iou_thres,
-                               orient=tk.HORIZONTAL, length=150)
+        iou_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.iou_thres, orient=tk.HORIZONTAL, length=150)
         iou_scale.grid(row=2, column=1, columnspan=2, pady=5, sticky=tk.W)
         self.iou_label = ttk.Label(left_frame, text=f"{self.iou_thres.get():.2f}")
         self.iou_label.grid(row=2, column=3, padx=5)
         iou_scale.configure(command=lambda x: self.iou_label.config(text=f"{float(x):.2f}"))
 
         # 功能按钮
-        ttk.Label(left_frame, text="功能", font=('Arial', 10, 'bold')).grid(row=3, column=0, columnspan=3, pady=(15,5))
-        ttk.Button(left_frame, text="图片检测", command=self.detect_image).grid(row=4, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="视频检测", command=self.detect_video).grid(row=5, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="摄像头检测", command=self.detect_webcam).grid(row=6, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="停止检测", command=self.stop_detection).grid(row=7, column=0, columnspan=3, pady=5, sticky=tk.EW)
+        ttk.Label(left_frame, text="功能", font=("Arial", 10, "bold")).grid(row=3, column=0, columnspan=3, pady=(15, 5))
+        ttk.Button(left_frame, text="图片检测", command=self.detect_image).grid(
+            row=4, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="视频检测", command=self.detect_video).grid(
+            row=5, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="摄像头检测", command=self.detect_webcam).grid(
+            row=6, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="停止检测", command=self.stop_detection).grid(
+            row=7, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
 
         # 右侧显示区域
         right_frame = ttk.Frame(main_frame)
@@ -109,11 +114,11 @@ class YOLOAttentionGUI:
 
         # 图像显示区域
         self.image_label = ttk.Label(right_frame, text="检测结果", relief=tk.SUNKEN, anchor=tk.CENTER)
-        self.image_label.pack(fill=tk.BOTH, expand=True, pady=(0,10))
+        self.image_label.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         # 统计信息区域
         stats_frame = ttk.LabelFrame(right_frame, text="情绪统计与专注度", padding="5")
-        stats_frame.pack(fill=tk.X, pady=(0,10))
+        stats_frame.pack(fill=tk.X, pady=(0, 10))
 
         # 创建一个网格用于显示各类情绪占比
         self.ratio_vars = {}
@@ -129,20 +134,21 @@ class YOLOAttentionGUI:
         # 专注度等级
         ttk.Label(stats_frame, text="专注度等级:").grid(row=row, column=0, sticky=tk.W, padx=5, pady=5)
         self.attention_var = tk.StringVar(value="未知")
-        ttk.Label(stats_frame, textvariable=self.attention_var, font=('Arial', 10, 'bold')).grid(row=row, column=1, sticky=tk.W, padx=5)
+        ttk.Label(stats_frame, textvariable=self.attention_var, font=("Arial", 10, "bold")).grid(
+            row=row, column=1, sticky=tk.W, padx=5
+        )
         # 添加保存结果按钮
-        ttk.Button(stats_frame, text="保存结果", command=self.save_results).grid(row=row + 1, column=0, columnspan=2,
-                                                                                 pady=10)
+        ttk.Button(stats_frame, text="保存结果", command=self.save_results).grid(
+            row=row + 1, column=0, columnspan=2, pady=10
+        )
         # 检测结果表格（可选，保留但可不显示位置）
-        columns = ('类别', '置信度')   # 省略位置列，保持简洁
-        self.tree = ttk.Treeview(right_frame, columns=columns, show='headings', height=6)
-        self.tree.heading('类别', text='类别')
-        self.tree.heading('置信度', text='置信度')
-        self.tree.column('类别', width=100)
-        self.tree.column('置信度', width=80)
+        columns = ("类别", "置信度")  # 省略位置列，保持简洁
+        self.tree = ttk.Treeview(right_frame, columns=columns, show="headings", height=6)
+        self.tree.heading("类别", text="类别")
+        self.tree.heading("置信度", text="置信度")
+        self.tree.column("类别", width=100)
+        self.tree.column("置信度", width=80)
         self.tree.pack(fill=tk.BOTH, expand=True)
-
-
 
         # 状态栏
         self.status_bar = ttk.Label(self.root, text="就绪", relief=tk.SUNKEN, anchor=tk.W)
@@ -154,7 +160,7 @@ class YOLOAttentionGUI:
             self.model_path.set(filename)
 
     def load_model(self):
-        """加载模型，如果失败则弹出错误"""
+        """加载模型，如果失败则弹出错误."""
         if self.model is not None:
             return self.model
         try:
@@ -162,7 +168,7 @@ class YOLOAttentionGUI:
             self.update_status("模型加载成功")
             return self.model
         except Exception as e:
-            messagebox.showerror("错误", f"模型加载失败：{str(e)}")
+            messagebox.showerror("错误", f"模型加载失败：{e!s}")
             return None
 
     def update_status(self, text):
@@ -170,7 +176,7 @@ class YOLOAttentionGUI:
         self.root.update_idletasks()
 
     def reset_stats(self):
-        """重置统计计数器"""
+        """重置统计计数器."""
         self.total_detections = 0
         for name in self.emotion_names:
             self.emotion_counts[name] = 0
@@ -180,7 +186,7 @@ class YOLOAttentionGUI:
         self.attention_var.set("未知")
 
     def update_stats_display(self):
-        """根据当前累计计数更新界面上的占比和专注度"""
+        """根据当前累计计数更新界面上的占比和专注度."""
         if self.total_detections == 0:
             return
         ratios = {}
@@ -193,9 +199,7 @@ class YOLOAttentionGUI:
         self.attention_var.set(level)
 
     def process_frame(self, frame, update_stats=True, display_table=False):
-        """
-        对单帧进行检测，可选是否更新统计信息和表格
-        返回标注后的图像
+        """对单帧进行检测，可选是否更新统计信息和表格 返回标注后的图像.
         """
         results = self.model(frame, conf=self.conf_thres.get(), iou=self.iou_thres.get(), verbose=False)[0]
         annotated = results.plot()
@@ -219,9 +223,10 @@ class YOLOAttentionGUI:
                     cls_id = int(box.cls[0])
                     cls_name = results.names[cls_id]
                     conf = float(box.conf[0])
-                    self.tree.insert('', tk.END, values=(cls_name, f"{conf:.2f}"))
+                    self.tree.insert("", tk.END, values=(cls_name, f"{conf:.2f}"))
 
         return annotated
+
     # # 不缩放尺寸
     # def display_image(self, cv_img):
     #     """将OpenCV图像（BGR）显示在Label上"""
@@ -235,11 +240,9 @@ class YOLOAttentionGUI:
     #     self.image_label.config(image=imgtk)
     #     self.image_label.image = imgtk
 
-    #缩放尺寸
+    # 缩放尺寸
     def display_image(self, cv_img):
-        """
-        将 OpenCV 图像（BGR）显示在 GUI 的 Label 上，
-        缩放至固定尺寸（例如 800x600），保持宽高比，多余部分填充黑色。
+        """将 OpenCV 图像（BGR）显示在 GUI 的 Label 上， 缩放至固定尺寸（例如 800x600），保持宽高比，多余部分填充黑色。.
         """
         # ===== 固定显示尺寸（可根据需要调整） =====
         DISPLAY_WIDTH = 400
@@ -259,7 +262,7 @@ class YOLOAttentionGUI:
         resized_img = pil_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
         # 创建固定大小的背景图像（黑色）
-        background = Image.new('RGB', (DISPLAY_WIDTH, DISPLAY_HEIGHT), (0, 0, 0))
+        background = Image.new("RGB", (DISPLAY_WIDTH, DISPLAY_HEIGHT), (0, 0, 0))
         # 计算粘贴位置（居中）
         offset = ((DISPLAY_WIDTH - new_w) // 2, (DISPLAY_HEIGHT - new_h) // 2)
         background.paste(resized_img, offset)
@@ -268,8 +271,6 @@ class YOLOAttentionGUI:
         imgtk = ImageTk.PhotoImage(image=background)
         self.image_label.config(image=imgtk)
         self.image_label.image = imgtk  # 保持引用，防止被垃圾回收
-
-
 
     # ---------- 图片检测 ----------
     def detect_image(self):
@@ -313,7 +314,7 @@ class YOLOAttentionGUI:
         thread.start()
 
     def video_loop(self):
-        """视频处理循环，在后台线程中运行，将帧显示在 GUI 上"""
+        """视频处理循环，在后台线程中运行，将帧显示在 GUI 上."""
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         # 如果没有有效的帧率，默认使用 30 FPS 的延时
         delay = 1 / fps if fps > 0 else 0.03
@@ -336,7 +337,7 @@ class YOLOAttentionGUI:
         self.root.after(0, self.video_finished)
 
     def video_finished(self):
-        """视频处理结束后的回调"""
+        """视频处理结束后的回调."""
         self.update_stats_display()
         self.update_status("视频检测完成")
 
@@ -353,54 +354,55 @@ class YOLOAttentionGUI:
         cv2.destroyAllWindows()
 
     def save_results(self):
-            """将当前统计结果保存到文件"""
-            if self.total_detections == 0:
-                 messagebox.showwarning("警告", "没有检测数据可保存")
-                 return
+        """将当前统计结果保存到文件."""
+        if self.total_detections == 0:
+            messagebox.showwarning("警告", "没有检测数据可保存")
+            return
 
-            # 创建 results 文件夹
-            save_dir = r"C:\Users\29987\Desktop\detection_results"
-            os.makedirs(save_dir, exist_ok=True)
+        # 创建 results 文件夹
+        save_dir = r"C:\Users\29987\Desktop\detection_results"
+        os.makedirs(save_dir, exist_ok=True)
 
-            # 生成文件名（使用当前时间）
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = os.path.join(save_dir, f"result_{timestamp}.csv")
+        # 生成文件名（使用当前时间）
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(save_dir, f"result_{timestamp}.csv")
 
-            # 准备数据
-            data = {
-                "timestamp": timestamp,
-                "total_detections": self.total_detections,
-            }
-            # 添加各类情绪占比
-            ratios = {}
+        # 准备数据
+        data = {
+            "timestamp": timestamp,
+            "total_detections": self.total_detections,
+        }
+        # 添加各类情绪占比
+        ratios = {}
+        for name in self.emotion_names:
+            ratio = self.emotion_counts[name] / self.total_detections
+            ratios[name] = ratio
+            data[f"{name}_count"] = self.emotion_counts[name]
+            data[f"{name}_ratio"] = round(ratio, 4)
+
+        # 专注度等级
+        level = self.attention_var.get()
+        data["attention_level"] = level
+
+        # 写入 CSV 文件
+        with open(filename, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            # 写表头和数据
+            writer.writerow(data.keys())
+            writer.writerow(data.values())
+
+        # 同时生成一个易读的 TXT 文件（可选）
+        txt_filename = os.path.join(save_dir, f"result_{timestamp}.txt")
+        with open(txt_filename, "w", encoding="utf-8") as f:
+            f.write(f"检测时间：{timestamp}\n")
+            f.write(f"总检测人脸数：{self.total_detections}\n\n")
+            f.write("情绪占比：\n")
             for name in self.emotion_names:
-                ratio = self.emotion_counts[name] / self.total_detections
-                ratios[name] = ratio
-                data[f"{name}_count"] = self.emotion_counts[name]
-                data[f"{name}_ratio"] = round(ratio, 4)
+                f.write(f"  {name}: {ratios[name]:.2%}\n")
+            f.write(f"\n专注度等级：{level}\n")
 
-            # 专注度等级
-            level = self.attention_var.get()
-            data["attention_level"] = level
+        messagebox.showinfo("保存成功", f"结果已保存到\n{filename}\n以及同目录的 txt 文件")
 
-            # 写入 CSV 文件
-            with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
-                writer = csv.writer(f)
-                # 写表头和数据
-                writer.writerow(data.keys())
-                writer.writerow(data.values())
-
-            # 同时生成一个易读的 TXT 文件（可选）
-            txt_filename = os.path.join(save_dir, f"result_{timestamp}.txt")
-            with open(txt_filename, 'w', encoding='utf-8') as f:
-                f.write(f"检测时间：{timestamp}\n")
-                f.write(f"总检测人脸数：{self.total_detections}\n\n")
-                f.write("情绪占比：\n")
-                for name in self.emotion_names:
-                    f.write(f"  {name}: {ratios[name]:.2%}\n")
-                f.write(f"\n专注度等级：{level}\n")
-
-            messagebox.showinfo("保存成功", f"结果已保存到\n{filename}\n以及同目录的 txt 文件")
 
 if __name__ == "__main__":
     root = tk.Tk()
