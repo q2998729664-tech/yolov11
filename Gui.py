@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
+
 import cv2
 from PIL import Image, ImageTk
-import threading
-import os
+
 from ultralytics import YOLO
+
 
 class YOLOGUI:
     def __init__(self, root):
@@ -16,9 +17,9 @@ class YOLOGUI:
         self.model_path = tk.StringVar(value="best.pt")  # 默认模型
         self.conf_thres = tk.DoubleVar(value=0.25)
         self.iou_thres = tk.DoubleVar(value=0.45)
-        self.stop_flag = False          # 用于停止摄像头/视频检测
-        self.cap = None                 # 视频捕获对象
-        self.after_id = None             # 用于取消 after 循环
+        self.stop_flag = False  # 用于停止摄像头/视频检测
+        self.cap = None  # 视频捕获对象
+        self.after_id = None  # 用于取消 after 循环
 
         # 创建界面
         self.create_widgets()
@@ -30,7 +31,7 @@ class YOLOGUI:
 
         # 左侧控制面板
         left_frame = ttk.LabelFrame(main_frame, text="模型设置", padding="10")
-        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0,10))
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
 
         # 模型选择
         ttk.Label(left_frame, text="选择模型:").grid(row=0, column=0, sticky=tk.W, pady=5)
@@ -40,8 +41,9 @@ class YOLOGUI:
 
         # 置信度阈值
         ttk.Label(left_frame, text="置信度阈值:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        conf_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.conf_thres,
-                                orient=tk.HORIZONTAL, length=150)
+        conf_scale = ttk.Scale(
+            left_frame, from_=0.0, to=1.0, variable=self.conf_thres, orient=tk.HORIZONTAL, length=150
+        )
         conf_scale.grid(row=1, column=1, columnspan=2, pady=5, sticky=tk.W)
         self.conf_label = ttk.Label(left_frame, text=f"{self.conf_thres.get():.2f}")
         self.conf_label.grid(row=1, column=3, padx=5)
@@ -49,19 +51,26 @@ class YOLOGUI:
 
         # IoU阈值
         ttk.Label(left_frame, text="IoU值:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        iou_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.iou_thres,
-                               orient=tk.HORIZONTAL, length=150)
+        iou_scale = ttk.Scale(left_frame, from_=0.0, to=1.0, variable=self.iou_thres, orient=tk.HORIZONTAL, length=150)
         iou_scale.grid(row=2, column=1, columnspan=2, pady=5, sticky=tk.W)
         self.iou_label = ttk.Label(left_frame, text=f"{self.iou_thres.get():.2f}")
         self.iou_label.grid(row=2, column=3, padx=5)
         iou_scale.configure(command=lambda x: self.iou_label.config(text=f"{float(x):.2f}"))
 
         # 功能按钮
-        ttk.Label(left_frame, text="功能", font=('Arial', 10, 'bold')).grid(row=3, column=0, columnspan=3, pady=(15,5))
-        ttk.Button(left_frame, text="图片检测", command=self.detect_image).grid(row=4, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="视频检测", command=self.detect_video).grid(row=5, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="摄像头检测", command=self.detect_webcam).grid(row=6, column=0, columnspan=3, pady=5, sticky=tk.EW)
-        ttk.Button(left_frame, text="停止检测", command=self.stop_detection).grid(row=7, column=0, columnspan=3, pady=5, sticky=tk.EW)
+        ttk.Label(left_frame, text="功能", font=("Arial", 10, "bold")).grid(row=3, column=0, columnspan=3, pady=(15, 5))
+        ttk.Button(left_frame, text="图片检测", command=self.detect_image).grid(
+            row=4, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="视频检测", command=self.detect_video).grid(
+            row=5, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="摄像头检测", command=self.detect_webcam).grid(
+            row=6, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
+        ttk.Button(left_frame, text="停止检测", command=self.stop_detection).grid(
+            row=7, column=0, columnspan=3, pady=5, sticky=tk.EW
+        )
 
         # 右侧显示区域
         right_frame = ttk.Frame(main_frame)
@@ -69,17 +78,17 @@ class YOLOGUI:
 
         # 图像显示
         self.image_label = ttk.Label(right_frame, text="检测结果", relief=tk.SUNKEN, anchor=tk.CENTER)
-        self.image_label.pack(fill=tk.BOTH, expand=True, pady=(0,10))
+        self.image_label.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         # 检测结果表格
-        columns = ('类别', '置信度', '位置 (x, y, w, h)')
-        self.tree = ttk.Treeview(right_frame, columns=columns, show='headings', height=8)
-        self.tree.heading('类别', text='类别')
-        self.tree.heading('置信度', text='置信度')
-        self.tree.heading('位置 (x, y, w, h)', text='位置 (x, y, w, h)')
-        self.tree.column('类别', width=100)
-        self.tree.column('置信度', width=80)
-        self.tree.column('位置 (x, y, w, h)', width=250)
+        columns = ("类别", "置信度", "位置 (x, y, w, h)")
+        self.tree = ttk.Treeview(right_frame, columns=columns, show="headings", height=8)
+        self.tree.heading("类别", text="类别")
+        self.tree.heading("置信度", text="置信度")
+        self.tree.heading("位置 (x, y, w, h)", text="位置 (x, y, w, h)")
+        self.tree.column("类别", width=100)
+        self.tree.column("置信度", width=80)
+        self.tree.column("位置 (x, y, w, h)", width=250)
         self.tree.pack(fill=tk.BOTH, expand=True)
 
         # 状态栏
@@ -96,13 +105,13 @@ class YOLOGUI:
         self.root.update_idletasks()
 
     def load_model(self):
-        """加载模型，如果失败则弹出错误"""
+        """加载模型，如果失败则弹出错误."""
         try:
             model = YOLO(self.model_path.get())
             self.update_status("模型加载成功")
             return model
         except Exception as e:
-            messagebox.showerror("错误", f"模型加载失败：{str(e)}")
+            messagebox.showerror("错误", f"模型加载失败：{e!s}")
             return None
 
     def detect_image(self):
@@ -122,7 +131,7 @@ class YOLOGUI:
         self.update_status("图片检测完成")
 
     def display_image(self, cv_img):
-        """将OpenCV图像（BGR）显示在Label上"""
+        """将OpenCV图像（BGR）显示在Label上."""
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(cv_img)
         # 缩放以适应显示区域（保持宽高比）
@@ -134,7 +143,7 @@ class YOLOGUI:
         self.image_label.image = imgtk  # 保持引用
 
     def update_detection_table(self, results):
-        """清空并更新检测结果表格"""
+        """清空并更新检测结果表格."""
         for item in self.tree.get_children():
             self.tree.delete(item)
         if results.boxes is not None:
@@ -144,7 +153,7 @@ class YOLOGUI:
                 conf = float(box.conf[0])
                 xywh = box.xywh[0].tolist()  # [x, y, w, h]
                 pos_str = f"({xywh[0]:.2f}, {xywh[1]:.2f}, {xywh[2]:.2f}, {xywh[3]:.2f})"
-                self.tree.insert('', tk.END, values=(cls_name, f"{conf:.2f}", pos_str))
+                self.tree.insert("", tk.END, values=(cls_name, f"{conf:.2f}", pos_str))
 
     def detect_video(self):
         model = self.load_model()
@@ -174,7 +183,7 @@ class YOLOGUI:
         self.play_video(model)
 
     def play_video(self, model):
-        """循环读取视频帧并显示（在新窗口中）"""
+        """循环读取视频帧并显示（在新窗口中）."""
         if self.stop_flag or self.cap is None:
             self.cap.release()
             self.update_status("检测已停止")
@@ -189,8 +198,8 @@ class YOLOGUI:
         results = model(frame, conf=self.conf_thres.get(), iou=self.iou_thres.get())[0]
         annotated_frame = results.plot()
         # 显示
-        cv2.imshow('YOLO Detection', annotated_frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # 按q停止
+        cv2.imshow("YOLO Detection", annotated_frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):  # 按q停止
             self.stop_detection()
         # 继续下一帧
         self.after_id = self.root.after(10, lambda: self.play_video(model))
@@ -204,6 +213,7 @@ class YOLOGUI:
             self.root.after_cancel(self.after_id)
             self.after_id = None
         self.update_status("检测已停止")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
